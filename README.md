@@ -1,6 +1,4 @@
-Here's the updated `README.md` with details about the scoring algorithm formula:
 
----
 
 # GitHub Scoring Algorithm
 
