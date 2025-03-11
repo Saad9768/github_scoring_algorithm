@@ -23,12 +23,12 @@ export class RepoServiceImpl implements RepoService {
     const repository: Repository[] =
       response.data.items
         .map(({ name, stargazers_count: stars, forks_count: forks, updated_at: lastUpdated, url }) => ({
-          name: name,
+          name,
+          url,
           stars,
           forks,
           lastUpdated,
           score: this.scoreService.calculateScore(stars, forks, lastUpdated),
-          url
         }));
     Utils.sortByKeys(repository, 'score', order === 'asc');
     return {
@@ -43,7 +43,7 @@ export class RepoServiceImpl implements RepoService {
   private callGitHubAPI({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto) {
 
     const githubApiUrl = this.configService.get<string>('GITHUB_API_URL');
-    const query = `language:${language} created:>${new Date(date).toISOString()}`;
+    const query = `language:${language}+created:>${new Date(date).toISOString()}`;
     const url = `${githubApiUrl}?q=${query}&sort=${sort}&order=${order}&page=${pageNumber}&per_page=${pageSize}`;
     const headers = { "X-GitHub-Api-Version": "2022-11-28" }
     return this.restService.get<API_RESPONSE>(url, headers);

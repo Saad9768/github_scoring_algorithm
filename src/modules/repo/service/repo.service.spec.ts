@@ -143,7 +143,7 @@ describe('RepoServiceImpl', () => {
       pageSize: 5,
     };
 
-    const expectedUrl = `${githubApiUrl}?q=language:TypeScript created:>${date.toISOString()}&sort=forks&order=asc&page=2&per_page=5`;
+    const expectedUrl = `${githubApiUrl}?q=language:TypeScript+created:>${date.toISOString()}&sort=forks&order=asc&page=2&per_page=5`;
 
     const mockAxiosResponse: AxiosResponse<API_RESPONSE> = {
       data: { total_count: 0, incomplete_results: false, items: [] },
