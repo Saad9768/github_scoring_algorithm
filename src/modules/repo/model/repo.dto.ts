@@ -6,8 +6,8 @@ import {
   Min,
   Max,
   IsIn,
-  IsDate
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RepoQueryDto {
   @IsString()
@@ -28,11 +28,13 @@ export class RepoQueryDto {
   date: Date;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
-  @Min(1)
+  @Min(0)
   pageNumber: number = 1;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(30)

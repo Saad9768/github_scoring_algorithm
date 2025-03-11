@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RepoController } from './repo.controller';
 import { RepoService } from '../service/repo.service';
 import { RepoQueryDto } from '../model/repo.dto';
-import { Repository } from '../model/repo.interface';
+import { PagingResponse, Repository } from '../model/repo.interface';
 import { validate } from 'class-validator';
 import { RepoServiceImpl } from '../service/repo.service.impl';
 import { CACHE_MANAGER, CacheInterceptor } from '@nestjs/cache-manager';
@@ -54,17 +54,23 @@ describe('RepoController', () => {
       pageSize: 10,
     };
 
-    const mockResponse: Repository[] = [
-      { name: 'nestjs', stars: 5000, forks: 300, lastUpdated: new Date('2024-02-19'), score: 95 },
-      { name: 'express', stars: 6000, forks: 400, lastUpdated: new Date('2024-02-18'), score: 97 },
+    const mockResponse: Repository[] =  [
+      { name: 'nestjs', stars: 5000, forks: 300, lastUpdated: new Date('2024-02-19'), score: 100, url: 'https://github.com/sassanix/Warracker' },
+      { name: 'express', stars: 6000, forks: 400, lastUpdated: new Date('2024-02-18'), score: 100, url: 'https://github.com/Rfym21/Qwen2API' },
     ];
-
-    jest.spyOn(repoService, 'fetchAndScoreRepos').mockResolvedValue(mockResponse);
+    const paginatedOutput: PagingResponse<Repository> = {
+      inCompleteResult: false,
+      totalPages: 1,
+      totalElementsInPage: 2,
+      totalElements: 2,
+      items: mockResponse
+    }
+    jest.spyOn(repoService, 'fetchAndScoreRepos').mockResolvedValue(paginatedOutput);
 
     const result = await repoController.getRepositories(query);
 
     expect(repoService.fetchAndScoreRepos).toHaveBeenCalledWith(query);
-    expect(result).toEqual(mockResponse);
+    expect(result).toEqual(paginatedOutput);
   });
 
   describe('DTO Validation', () => {
@@ -116,13 +122,13 @@ describe('RepoController', () => {
       expect(errors.some(e => e.property === 'order')).toBe(true);
     });
 
-    it('should fail if pageNumber is less than 1', async () => {
+    it('should fail if pageNumber is less than 0', async () => {
       const invalidDto = new RepoQueryDto();
       invalidDto.language = 'Python';
       invalidDto.sort = 'stars';
       invalidDto.order = 'asc';
       invalidDto.date = new Date('2024-02-20');
-      invalidDto.pageNumber = 0;
+      invalidDto.pageNumber = -1;
 
       const errors = await validate(invalidDto);
       expect(errors.length).toBeGreaterThan(0);

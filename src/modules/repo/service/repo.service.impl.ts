@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { RestServiceImpl } from '../../rest/service/rest.service.impl';
 import { RepoService } from './repo.service';
 import { Utils } from '../../../util';
-import { API_RESPONSE, Repository } from '../model/repo.interface';
+import { API_RESPONSE, PagingResponse, Repository } from '../model/repo.interface';
 import { RepoQueryDto } from '../model/repo.dto';
 
 @Injectable()
@@ -17,18 +17,27 @@ export class RepoServiceImpl implements RepoService {
     private readonly configService: ConfigService
   ) { }
 
-  async fetchAndScoreRepos({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto): Promise<Repository[]> {
+  async fetchAndScoreRepos({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto): Promise<PagingResponse<Repository>> {
     const response = await this.callGitHubAPI({ language, date, sort, order, pageNumber, pageSize });
 
-    const repository: Repository[] = response.data.items
-      .map(({ name, stargazers_count: stars, forks_count: forks, updated_at: lastUpdated }) => ({
-        name: name,
-        stars,
-        forks,
-        lastUpdated,
-        score: this.scoreService.calculateScore(forks, forks, lastUpdated),
-      }));
-    return Utils.sortByKeys(repository, 'score', order === 'asc');
+    const repository: Repository[] =
+      response.data.items
+        .map(({ name, stargazers_count: stars, forks_count: forks, updated_at: lastUpdated, url }) => ({
+          name: name,
+          stars,
+          forks,
+          lastUpdated,
+          score: this.scoreService.calculateScore(stars, forks, lastUpdated),
+          url
+        }));
+    Utils.sortByKeys(repository, 'score', order === 'asc');
+    return {
+      inCompleteResult: response.data.incomplete_results,
+      totalPages: Math.ceil(response.data.total_count / pageSize),
+      totalElementsInPage: repository.length,
+      totalElements: response.data.total_count,
+      items: repository,
+    };
   }
 
   private callGitHubAPI({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto) {

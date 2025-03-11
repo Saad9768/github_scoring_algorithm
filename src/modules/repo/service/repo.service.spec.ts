@@ -4,7 +4,7 @@ import { ScoreServiceImpl } from '../../score/service/score.service.impl';
 import { ConfigService } from '@nestjs/config';
 import { RestServiceImpl } from '../../rest/service/rest.service.impl';
 import { RepoQueryDto } from '../model/repo.dto';
-import { Repository, API_RESPONSE } from '../model/repo.interface';
+import { Repository, API_RESPONSE, PagingResponse } from '../model/repo.interface';
 import { CacheInterceptor, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { Utils } from '../../../util';
@@ -75,19 +75,21 @@ describe('RepoServiceImpl', () => {
 
     const mockApiResponse: API_RESPONSE = {
       total_count: 2,
-      incomplete_results: 0,
+      incomplete_results: false,
       items: [
         {
           name: 'nestjs',
           stargazers_count: 5000,
           forks_count: 300,
           updated_at: new Date('2024-02-19'),
+          url: 'https://github.com/sassanix/Warracker'
         },
         {
           name: 'express',
           stargazers_count: 6000,
           forks_count: 400,
           updated_at: new Date('2024-02-18'),
+          url: 'https://github.com/Rfym21/Qwen2API'
         },
       ],
     };
@@ -105,9 +107,16 @@ describe('RepoServiceImpl', () => {
     };
 
     const expectedRepositories: Repository[] = [
-      { name: 'nestjs', stars: 5000, forks: 300, lastUpdated: new Date('2024-02-19'), score: 100 },
-      { name: 'express', stars: 6000, forks: 400, lastUpdated: new Date('2024-02-18'), score: 100 },
+      { name: 'nestjs', stars: 5000, forks: 300, lastUpdated: new Date('2024-02-19'), score: 100, url: 'https://github.com/sassanix/Warracker' },
+      { name: 'express', stars: 6000, forks: 400, lastUpdated: new Date('2024-02-18'), score: 100, url: 'https://github.com/Rfym21/Qwen2API' },
     ];
+    const paginatedOutput: PagingResponse<Repository> = {
+      inCompleteResult: false,
+      totalPages: 1,
+      totalElementsInPage: 2,
+      totalElements: 2,
+      items: expectedRepositories
+    }
 
     jest.spyOn(restService, 'get').mockResolvedValue(Promise.resolve(mockAxiosResponse));
     jest.spyOn(Utils, 'sortByKeys').mockImplementation((data) => data);
@@ -120,7 +129,7 @@ describe('RepoServiceImpl', () => {
     );
 
     expect(scoreService.calculateScore).toHaveBeenCalledTimes(2);
-    expect(result).toEqual(expectedRepositories);
+    expect(result).toEqual(paginatedOutput);
   });
 
   it('should call GitHub API with correct URL and headers', async () => {
@@ -137,7 +146,7 @@ describe('RepoServiceImpl', () => {
     const expectedUrl = `${githubApiUrl}?q=language:TypeScript created:>${date.toISOString()}&sort=forks&order=asc&page=2&per_page=5`;
 
     const mockAxiosResponse: AxiosResponse<API_RESPONSE> = {
-      data: { total_count: 0, incomplete_results: 0, items: [] },
+      data: { total_count: 0, incomplete_results: false, items: [] },
       status: 200,
       statusText: 'OK',
       headers: {},
