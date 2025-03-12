@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RepoController } from './repo.controller';
 import { RepoService } from '../service/repo.service';
 import { RepoQueryDto } from '../model/repo.dto';
-import { PagingResponse, Repository } from '../model/repo.interface';
+import {  Repository } from '../model/repo.interface';
 import { validate } from 'class-validator';
 import { RepoServiceImpl } from '../service/repo.service.impl';
 import { CACHE_MANAGER, CacheInterceptor } from '@nestjs/cache-manager';
@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 
 describe('RepoController', () => {
   let repoController: RepoController;
-  let repoService: RepoService;
+  let repoService: RepoServiceImpl;
 
   beforeEach(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -19,9 +19,21 @@ describe('RepoController', () => {
         {
           provide: RepoServiceImpl,
           useValue: {
-            fetchAndScoreRepos: jest.fn().mockResolvedValue([
-              { name: 'nestjs', stars: 1000, forks: 500, lastUpdated: '2024-02-19', score: 95 },
-            ]),
+            fetchAndScoreRepos: jest.fn().mockResolvedValue({
+              nodes: [
+                {
+                  "name": "react",
+                  "url": "https://github.com/facebook/react",
+                  "stars": 233118,
+                  "forks": 47873,
+                  "lastUpdated": "2025-03-11T23:08:08Z",
+                  "score": 130945.9
+                }
+              ], pageInfo: {
+                endCursor: "Y3Vyc29yOjEw",
+                hasNextPage: true
+              }
+            }),
           },
         },
         {
@@ -54,23 +66,37 @@ describe('RepoController', () => {
       pageSize: 10,
     };
 
-    const mockResponse: Repository[] =  [
-      { name: 'nestjs', stars: 5000, forks: 300, lastUpdated: new Date('2024-02-19'), score: 100, url: 'https://github.com/sassanix/Warracker' },
-      { name: 'express', stars: 6000, forks: 400, lastUpdated: new Date('2024-02-18'), score: 100, url: 'https://github.com/Rfym21/Qwen2API' },
+    const mockRepository: Repository[] = [
+      {
+        "name": "react",
+        "url": "https://github.com/facebook/react",
+        "stars": 233118,
+        "forks": 47873,
+        "lastUpdated": new Date("2025-03-11T23:08:08Z"),
+        "score": 130945.9
+      },
+      {
+        "name": "bootstrap",
+        "url": "https://github.com/twbs/bootstrap",
+        "stars": 171742,
+        "forks": 79046,
+        "lastUpdated": new Date("2025-03-11T22:13:51Z"),
+        "score": 109609.8
+      }
     ];
-    const paginatedOutput: PagingResponse<Repository> = {
-      inCompleteResult: false,
-      totalPages: 1,
-      totalElementsInPage: 2,
-      totalElements: 2,
-      items: mockResponse
+    const mockedOutput = {
+      nodes: mockRepository,
+      pageInfo: {
+        endCursor: "Y3Vyc29yOjEw",
+        hasNextPage: true
+      }
     }
-    jest.spyOn(repoService, 'fetchAndScoreRepos').mockResolvedValue(paginatedOutput);
+    jest.spyOn(repoService, 'fetchAndScoreRepos').mockResolvedValue(mockedOutput);
 
     const result = await repoController.getRepositories(query);
 
     expect(repoService.fetchAndScoreRepos).toHaveBeenCalledWith(query);
-    expect(result).toEqual(paginatedOutput);
+    expect(result).toEqual(mockedOutput);
   });
 
   describe('DTO Validation', () => {

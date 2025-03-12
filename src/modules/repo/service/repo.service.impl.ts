@@ -5,8 +5,9 @@ import { ConfigService } from '@nestjs/config';
 import { RestServiceImpl } from '../../rest/service/rest.service.impl';
 import { RepoService } from './repo.service';
 import { Utils } from '../../../util';
-import { API_RESPONSE, PagingResponse, Repository } from '../model/repo.interface';
+import { GraphQLResponse, RESPONSE_ITEMS, Repository } from '../model/repo.interface';
 import { RepoQueryDto } from '../model/repo.dto';
+import { AxiosHeaders } from 'axios';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -17,12 +18,11 @@ export class RepoServiceImpl implements RepoService {
     private readonly configService: ConfigService
   ) { }
 
-  async fetchAndScoreRepos({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto): Promise<PagingResponse<Repository>> {
-    const response = await this.callGitHubAPI({ language, date, sort, order, pageNumber, pageSize });
-
+  async fetchAndScoreRepos({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto) {
+    const response = await this.callGitHubAPIGraphQL({ language, date, sort, order, pageNumber, pageSize });
     const repository: Repository[] =
-      response.data.items
-        .map(({ name, stargazers_count: stars, forks_count: forks, updated_at: lastUpdated, url }) => ({
+      response.nodes
+        .map(({ name, stargazerCount: stars, forkCount: forks, updatedAt: lastUpdated, url }) => ({
           name,
           url,
           stars,
@@ -32,20 +32,46 @@ export class RepoServiceImpl implements RepoService {
         }));
     Utils.sortByKeys(repository, 'score', order === 'asc');
     return {
-      inCompleteResult: response.data.incomplete_results,
-      totalPages: Math.ceil(response.data.total_count / pageSize),
-      totalElementsInPage: repository.length,
-      totalElements: response.data.total_count,
-      items: repository,
+      nodes: repository,
+      pageInfo: response.pageInfo
     };
   }
 
-  private callGitHubAPI({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto) {
+  private async callGitHubAPIGraphQL({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto) {
+    const githubApiUrlGraphQL = this.configService.get<string>('GITHUB_API_GRAPH_URL') || '';
+    const fieldSelections = ['name', 'url', 'stargazerCount', 'forkCount', 'updatedAt'].map((field) => field).join('\n');
+    const query = `language:${language}+created:>${new Date(date).toISOString()}&sort=${sort}&order=${order}`;
 
-    const githubApiUrl = this.configService.get<string>('GITHUB_API_URL');
-    const query = `language:${language}+created:>${new Date(date).toISOString()}`;
-    const url = `${githubApiUrl}?q=${query}&sort=${sort}&order=${order}&page=${pageNumber}&per_page=${pageSize}`;
-    const headers = { "X-GitHub-Api-Version": "2022-11-28" }
-    return this.restService.get<API_RESPONSE>(url, headers);
+    const afterCursor =
+      pageNumber > 1
+        ? `, after: "${btoa(`cursor:${(pageNumber - 1) * pageSize}`)}" `
+        : '';
+
+    const graphqlQuery = `query {
+          search(
+            query: "${query}"
+            type: REPOSITORY
+            first: ${pageSize}${afterCursor}
+          ) {
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+            nodes {
+              ... on Repository {
+                ${fieldSelections}
+              }
+            }
+          }
+        }`.replace(/\s+/g, ' ').trim();
+
+    const token = this.configService.get<string>('GITHUB_TOKEN') || '';
+    const headers = new AxiosHeaders();
+    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Content-Type', 'application/json');
+
+    const { data } = await this.restService.post<GraphQLResponse<RESPONSE_ITEMS>>(githubApiUrlGraphQL, { query: graphqlQuery }, headers)
+    return { nodes: data.data.search.nodes, pageInfo: data.data.search.pageInfo };
   }
+
 }

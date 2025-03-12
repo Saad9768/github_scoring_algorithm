@@ -7,25 +7,21 @@ export interface Repository {
   score: number;
 }
 
-export interface API_RESPONSE {
-  total_count: number;
-  incomplete_results: boolean;
-  items: ITEMS[];
-}
-
-export interface ITEMS {
+export interface RESPONSE_ITEMS {
   name: string;
   url: string;
-  stargazers_count: number;
-  forks_count: number;
-  updated_at: Date;
+  stargazerCount: number;
+  forkCount: number;
+  updatedAt: Date;
 }
 
-export interface PagingResponse<T> {
-  inCompleteResult: boolean,
-  totalPages: number;
-  totalElementsInPage: number;
-  totalElements: number;
-  items: T[];
-}
 
+export interface GraphQLResponse<T> {
+  data: {
+    search: {
+      nodes: T[];
+      pageInfo: PageInfo;
+    };
+  };
+  errors?: { message: string }[];
+}
