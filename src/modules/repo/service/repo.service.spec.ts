@@ -103,6 +103,8 @@ describe('RepoServiceImpl', () => {
               endCursor: 'Y3Vyc29yOjEw',
               hasNextPage: true,
             },
+            repositoryCount: 53442875,
+            totalPages: 1781430
           },
         },
         errors: [],
@@ -138,6 +140,8 @@ describe('RepoServiceImpl', () => {
         endCursor: 'Y3Vyc29yOjEw',
         hasNextPage: true,
       },
+      repositoryCount: 53442875,
+      totalPages: 5344288,
     };
 
     jest.spyOn(restService, 'post').mockResolvedValue(mockGraphQLResponse);
@@ -170,10 +174,11 @@ describe('RepoServiceImpl', () => {
 
     const expectedQuery = `query {
       search(
-        query: "language:javascript,java+created:>2024-02-15T00:00:00.000Z&sort=forks&order=asc"
+        query: "language:javascript,java,+created:>2024-02-15T00:00:00.000Z&sort=forks&order=asc"
         type: REPOSITORY
         first: 5, after: "Y3Vyc29yOjU="
       ) {
+        repositoryCount
         pageInfo {
           endCursor
           hasNextPage
@@ -200,6 +205,8 @@ describe('RepoServiceImpl', () => {
               endCursor: null,
               hasNextPage: false,
             },
+            repositoryCount: 0,
+            totalPages: 0
           },
         },
         errors: [],

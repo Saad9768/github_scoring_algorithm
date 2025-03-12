@@ -13,12 +13,7 @@ export class RestServiceImpl implements RestService {
   }
   post<T>(url: string, data: unknown, headers: AxiosHeaders) {
 
-    return this.httpService.axiosRef.post<T>(
-      url,
-      data,
-      {
-        headers,
-      }
+    return this.httpService.axiosRef.post<T>(url, data, { headers }
     );
   }
 }

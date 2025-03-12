@@ -33,14 +33,16 @@ export class RepoServiceImpl implements RepoService {
     Utils.sortByKeys(repository, 'score', order === 'asc');
     return {
       nodes: repository,
-      pageInfo: response.pageInfo
+      pageInfo: response.pageInfo,
+      repositoryCount: response.repositoryCount,
+      totalPages: Math.ceil(response.repositoryCount / pageSize)
     };
   }
 
   private async callGitHubAPIGraphQL({ language, date, sort, order, pageNumber, pageSize }: RepoQueryDto) {
     const githubApiUrlGraphQL = this.configService.get<string>('GITHUB_API_GRAPH_URL') || '';
     const fieldSelections = ['name', 'url', 'stargazerCount', 'forkCount', 'updatedAt'].map((field) => field).join('\n');
-    const query = `language:${language}+created:>${new Date(date).toISOString()}&sort=${sort}&order=${order}`;
+    const query = `language:${language},+created:>${new Date(date).toISOString()}&sort=${sort}&order=${order}`;
 
     const afterCursor =
       pageNumber > 1
@@ -53,6 +55,7 @@ export class RepoServiceImpl implements RepoService {
             type: REPOSITORY
             first: ${pageSize}${afterCursor}
           ) {
+            repositoryCount
             pageInfo {
               endCursor
               hasNextPage
@@ -69,9 +72,8 @@ export class RepoServiceImpl implements RepoService {
     const headers = new AxiosHeaders();
     headers.set('Authorization', `Bearer ${token}`);
     headers.set('Content-Type', 'application/json');
-
     const { data } = await this.restService.post<GraphQLResponse<RESPONSE_ITEMS>>(githubApiUrlGraphQL, { query: graphqlQuery }, headers)
-    return { nodes: data.data.search.nodes, pageInfo: data.data.search.pageInfo };
+    return { nodes: data.data.search.nodes, pageInfo: data.data.search.pageInfo, repositoryCount: data.data.search.repositoryCount };
   }
 
 }

@@ -21,6 +21,8 @@ export interface GraphQLResponse<T> {
     search: {
       nodes: T[];
       pageInfo: PageInfo;
+      repositoryCount: number;
+      totalPages: number;
     };
   };
   errors?: { message: string }[];

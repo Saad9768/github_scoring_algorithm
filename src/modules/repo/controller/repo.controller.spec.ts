@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RepoController } from './repo.controller';
 import { RepoService } from '../service/repo.service';
 import { RepoQueryDto } from '../model/repo.dto';
-import {  Repository } from '../model/repo.interface';
+import { Repository } from '../model/repo.interface';
 import { validate } from 'class-validator';
 import { RepoServiceImpl } from '../service/repo.service.impl';
 import { CACHE_MANAGER, CacheInterceptor } from '@nestjs/cache-manager';
@@ -89,7 +89,9 @@ describe('RepoController', () => {
       pageInfo: {
         endCursor: "Y3Vyc29yOjEw",
         hasNextPage: true
-      }
+      },
+      repositoryCount: 53442875,
+      totalPages: 1781430
     }
     jest.spyOn(repoService, 'fetchAndScoreRepos').mockResolvedValue(mockedOutput);
 
