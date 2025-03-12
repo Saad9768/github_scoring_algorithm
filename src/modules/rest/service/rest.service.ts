@@ -1,6 +1,6 @@
-import { AxiosResponse } from "axios";
+import { AxiosHeaders, AxiosResponse } from "axios";
 
 export interface RestService {
-    get<T>(url: string, headers: any): Promise<AxiosResponse<T>>
-    // post<T>(url: string, headers: any): Promise<AxiosResponse<T>>
+    get<T>(url: string, headers: AxiosHeaders): Promise<AxiosResponse<T>>
+    post<T>(url: string, data: unknown, headers: AxiosHeaders): Promise<AxiosResponse<T>>
 }

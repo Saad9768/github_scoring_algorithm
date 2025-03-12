@@ -11,7 +11,7 @@ export class RestServiceImpl implements RestService {
   get<T>(url: string, headers) {
     return this.httpService.axiosRef.get<T>(url, headers);
   }
-  post<T>(url: string, data: any, headers: AxiosHeaders) {
+  post<T>(url: string, data: unknown, headers: AxiosHeaders) {
 
     return this.httpService.axiosRef.post<T>(
       url,
