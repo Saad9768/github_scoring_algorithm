@@ -25,3 +25,8 @@ export interface GraphQLResponse<T> {
   };
   errors?: { message: string }[];
 }
+
+export interface PageInfo {
+  endCursor: string | null;
+  hasNextPage: boolean;
+}
