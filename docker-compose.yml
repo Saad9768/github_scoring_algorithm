@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:latest
+    container_name: my-redis
+    ports:
+      - "6379:6379"
+    restart: always
+    networks:
+      - my_network
+
+  github_scoring_algorithm:
+    image: github_scoring_algorithm
+    container_name: github_scoring_algorithm
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "9000:3000"
+    networks:
+      - my_network
+    restart: always
+
+networks:
+  my_network:
+    driver: bridge
